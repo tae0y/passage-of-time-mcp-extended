@@ -612,12 +612,10 @@ def format_duration(
         return f"Error formatting duration: {str(e)}"
 
 if __name__ == "__main__":
-    import asyncio
     port = int(os.environ.get("PORT", 8000))
-    asyncio.run(
-        mcp.run_sse_async(
-            host="0.0.0.0",  # Changed from 127.0.0.1 to allow external connections
-            port=port,
-            log_level="debug"
-        )
+    mcp.run(
+        transport="sse",
+        host="0.0.0.0",
+        port=port,
+        log_level="debug"
     )

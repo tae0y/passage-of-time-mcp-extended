@@ -1,12 +1,27 @@
 from fastmcp import FastMCP
+from fastmcp.server.auth.providers.github import GitHubProvider
 import datetime
 import pytz
 import os
 from typing import Dict, Union, Optional, Literal
 from datetime import datetime, timedelta
 
+_github_client_id = os.environ.get("GITHUB_CLIENT_ID")
+_github_client_secret = os.environ.get("GITHUB_CLIENT_SECRET")
+_base_url = os.environ.get("MCP_BASE_URL")
+
+if _github_client_id and _github_client_secret and _base_url:
+    _auth = GitHubProvider(
+        client_id=_github_client_id,
+        client_secret=_github_client_secret,
+        base_url=_base_url,
+    )
+else:
+    _auth = None
+
 mcp = FastMCP(
     name="Perception of Passage of Time",
+    auth=_auth,
     instructions="""You now have access to current_datetime() and can pass along an optional timezone parameter (defaults to NYC). You should call this at the start of every response, so you can get an appreciation for the user's passage of time.
 
 To help you make computations about time, you have multiple other tools:
@@ -614,7 +629,7 @@ def format_duration(
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     mcp.run(
-        transport="sse",
+        transport="streamable-http",
         host="0.0.0.0",
         port=port,
         log_level="debug"

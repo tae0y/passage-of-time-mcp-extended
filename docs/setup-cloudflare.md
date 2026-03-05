@@ -8,6 +8,7 @@ This page describes how to create a Cloudflare Tunnel to expose the MCP server t
 - A registered domain (any registrar)
 - Docker and Docker Compose installed on the server
 - `CLOUDFLARE_TUNNEL_TOKEN` available to add to the `.env` file on the server
+- A GitHub account (for OAuth)
 - [uv](https://docs.astral.sh/uv/) installed (for local development)
 
 ## Local Development Setup
@@ -30,7 +31,22 @@ Run tests:
 uv run pytest
 ```
 
-The server starts on `http://0.0.0.0:8000/sse`.
+The server starts on `http://0.0.0.0:8000/mcp`.
+
+## Create a GitHub OAuth App
+
+Claude.ai Remote MCP requires OAuth authentication. This server uses GitHub as the OAuth provider.
+
+1. Go to [GitHub](https://github.com) → **Settings** → **Developer settings** → **OAuth Apps** → **New OAuth App**.
+
+1. Fill in the fields:
+   - **Application name**: `passage-of-time-mcp` (or any name)
+   - **Homepage URL**: `https://<subdomain>.<domain>`
+   - **Authorization callback URL**: `https://<subdomain>.<domain>/auth/callback`
+
+1. Click **Register application**.
+
+1. On the app page, copy the **Client ID**. Then click **Generate a new client secret** and copy the secret.
 
 ## Add the domain to Cloudflare
 
@@ -66,21 +82,27 @@ The server starts on `http://0.0.0.0:8000/sse`.
 1. Click **Save hostname**.
    The tunnel status will remain **Inactive** until the `cloudflared` container starts.
 
-## Add the token to the server
+## Add variables to the server
 
-On the server, copy `.env.example` to `.env` at the project root and fill in the token:
+On the server, copy `.env.example` to `.env` at the project root and fill in all values:
 
 ```bash
 cp .env.example .env
 ```
 
 ```env
-CLOUDFLARE_TUNNEL_TOKEN=<token copied in step 3>
+CLOUDFLARE_TUNNEL_TOKEN=<token from Cloudflare Zero Trust>
+GITHUB_CLIENT_ID=<GitHub OAuth App client ID>
+GITHUB_CLIENT_SECRET=<GitHub OAuth App client secret>
+MCP_BASE_URL=https://<subdomain>.<domain>
 ```
 
 | Variable | Description |
 |----------|-------------|
 | `CLOUDFLARE_TUNNEL_TOKEN` | Tunnel token from Cloudflare Zero Trust |
+| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
+| `MCP_BASE_URL` | Public HTTPS URL of this server (no trailing slash) |
 
 ## Start the containers
 
@@ -88,18 +110,19 @@ CLOUDFLARE_TUNNEL_TOKEN=<token copied in step 3>
 docker compose -f docker/docker-compose.yml --env-file .env up -d
 ```
 
-The `cloudflared` service depends on the `mcp` health check passing, so it starts roughly 15–45 seconds after Docker Compose begins. Once both containers are running, the tunnel status in the Cloudflare dashboard changes to **Healthy**.
+The `cloudflared` service depends on the `time-mcp` health check passing, so it starts roughly 15–45 seconds after Docker Compose begins. Once both containers are running, the tunnel status in the Cloudflare dashboard changes to **Healthy**.
 
 ## Connect to Claude.ai
 
 1. In Claude.ai, go to **Settings** → **Integrations** → **Add integration** → **Custom**.
-1. Enter the server URL: `https://<subdomain>.<domain>/sse`
+1. Enter the server URL: `https://<subdomain>.<domain>/mcp`
+1. Claude.ai will redirect to GitHub for authentication. Approve the OAuth request.
 1. Save and enable the time-related tools.
 
 ## Verify
 
 1. Open the Cloudflare Zero Trust dashboard → **Networks** → **Tunnels** — confirm the tunnel shows **Healthy**.
-1. Connect from Claude.ai using the public URL ending in `/sse`.
+1. Connect from Claude.ai using the public URL ending in `/mcp`.
 1. Ask Claude for the current time to confirm the `current_datetime` tool responds.
 
 ## Remove
@@ -111,3 +134,4 @@ The `cloudflared` service depends on the `mcp` health check passing, so it start
    ```
 
 1. In the Cloudflare Zero Trust dashboard → **Networks** → **Tunnels**, select the tunnel → **Delete**.
+1. In GitHub → **Settings** → **Developer settings** → **OAuth Apps**, delete the OAuth App.

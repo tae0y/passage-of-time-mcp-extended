@@ -22,9 +22,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH"
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd --gid 1000 appuser \
+RUN groupadd --gid 1000 appuser \
     && useradd --uid 1000 --gid appuser --no-create-home appuser
 
 COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
@@ -35,6 +33,6 @@ USER appuser
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:8000/sse || exit 1
+    CMD python -c "import urllib.request, json; req = urllib.request.Request('http://localhost:8000/mcp', data=json.dumps({'jsonrpc':'2.0','id':1,'method':'initialize','params':{'protocolVersion':'2024-11-05','capabilities':{},'clientInfo':{'name':'healthcheck','version':'0.1'}}}).encode(), headers={'Content-Type':'application/json','Accept':'application/json, text/event-stream'}); urllib.request.urlopen(req)" || exit 1
 
 CMD ["python", "passage_of_time_mcp.py"]

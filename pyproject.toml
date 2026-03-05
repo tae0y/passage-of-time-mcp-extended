@@ -1,0 +1,20 @@
+[project]
+name = "passage-of-time-mcp"
+version = "0.1.0"
+description = "MCP server that gives language models temporal awareness and time calculation abilities"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp",
+    "pytz",
+    "python-dateutil",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest",
+]

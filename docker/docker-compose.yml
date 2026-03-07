@@ -1,0 +1,39 @@
+name: passage-of-time-mcp
+
+services:
+  time-mcp:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    expose:
+      - "8000"
+    networks:
+      - internal
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "7"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/mcp')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - internal
+    restart: unless-stopped
+    depends_on:
+      time-mcp:
+        condition: service_healthy
+
+networks:
+  internal:
+    driver: bridge

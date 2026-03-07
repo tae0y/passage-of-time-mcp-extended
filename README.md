@@ -19,41 +19,40 @@ Through human-LLM collaboration, we discovered that with proper temporal tools, 
 ### Prerequisites
 
 - Python 3.12+
-- pipenv (or pip)
+- [uv](https://docs.astral.sh/uv/) (recommended) or pip
 - An MCP-compatible client (Claude.ai, Continue.dev, etc.)
 
 ### Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/jlumbroso/passage-of-time-mcp.git
-cd passage-of-time-mcp
-```
+1. Clone the repository.
 
-2. Install dependencies:
-```bash
-pipenv install
-# or with pip:
-pip install fastmcp pytz
-```
+    ```bash
+    git clone https://github.com/jlumbroso/passage-of-time-mcp.git
+    cd passage-of-time-mcp
+    ```
 
-3. Run the server:
-```bash
-pipenv run server
-# or directly:
-pipenv run python passage_of_time_mcp.py
-```
+1. Install dependencies.
 
-The server will start on `http://0.0.0.0:8000/sse`.
+    ```bash
+    uv sync
+    ```
+
+1. Run the server.
+
+    ```bash
+    uv run passage-of-time-mcp
+    ```
+
+The server will start on `http://0.0.0.0:8000/mcp` using the Streamable HTTP transport.
 
 ### Connecting to Claude.ai
 
-1. In Claude.ai, go to Settings → Integrations
-2. Click "Add integration" and select "Custom"
-3. Enter the server URL (e.g., `https://your-server.ngrok-free.app/sse` if using ngrok, make sure to add `/sse` at the end)
-4. Save and enable all the time-related tools
+1. In Claude.ai, go to **Settings** → **Integrations**.
+1. Click **Add integration** and select **Custom**.
+1. Enter the server URL: `https://your-server-domain/mcp`
+1. Save and enable all the time-related tools.
 
-> **Note**: For local development, you'll need to expose your server using ngrok or deploy it to a public URL.
+> **Note:** For production deployment with Cloudflare Tunnel, see [docs/setup-cloudflare.md](docs/setup-cloudflare.md). For local development, you can use [ngrok](https://ngrok.com/) to expose `http://localhost:8000`.
 
 ## 🛠️ Available Tools
 
@@ -196,13 +195,12 @@ This strict formatting prevents ambiguity and ensures reliable calculations.
 ## 🚧 Known Issues & Future Work
 
 ### Current Limitations
-- The SSE transport is deprecated but currently most reliable
 - Server requires public URL for web-based clients
 - No persistent memory of past time calculations
 
 ### Roadmap
-- [ ] Migrate to modern `http-stream` transport
-- [ ] Add Docker support for easier deployment
+- [x] Migrate to modern Streamable HTTP transport
+- [x] Add Docker support for easier deployment
 - [ ] Create browser extension for local development
 - [ ] Add configurable activity patterns per user
 - [ ] Support for calendar integration
@@ -218,84 +216,27 @@ This project emerged from human-LLM collaboration and welcomes more of the same!
 
 ### Development Setup
 
-First, clone the repository:
-
 ```bash
 git clone https://github.com/jlumbroso/passage-of-time-mcp.git
 cd passage-of-time-mcp
-```
 
-Then, install dependencies (I am using `pipenv` because it simultaneously creates a virtual environment and installs package, but any pip-compatible tool will work):
-
-```bash
-# Install dev dependencies
-pipenv install --dev
+# Install dependencies (including dev)
+uv sync
 
 # Run tests
-pipenv run test
+uv run pytest
 
-# Run server
-pipenv run server
+# Run server locally
+uv run passage-of-time-mcp
 ```
 
-This will start the server on `http://0.0.0.0:8000/sse` on your local computer. However, for web-based clients to connect to it, you will need to expose it to the internet using a service like [ngrok](https://ngrok.com/). 
+The server starts on `http://0.0.0.0:8000/mcp`.
 
-Assuming you have ngrok installed, you can run `ngrok http 8000` to expose the server to the internet, and then use the provided URL in your MCP client. By default, ngrok will provide the endpoint to use in the form of `https://<random-subdomain>.ngrok-free.app/` in the Terminal:
+### Deployment
 
-```bash
-❤️ ngrok? We're hiring https://ngrok.com/careers
-
-Session Status                online
-Account                       Jérémie Lumbroso (Plan: Free)
-Update                        update available (version 3.23.1, Ctrl-U to update)
-Version                       3.22.1
-Region                        United States (us)
-Latency                       31ms
-Latency                       1575ms
-Web Interface                 http://127.0.0.1:4040
-Forwarding                    https://37f9-2607-f470-6-1001-243b-bc5c-df2e-762.ngrok-free.app ->
-
-Connections                   ttl     opn     rt1     rt5     p50     p90
-                              1756    0       0.01    0.03    5.32    61.51
-
-HTTP Requests
--------------
-
-00:06:44.030 EDT POST /messages/                202 Accepted
-00:06:43.936 EDT POST /messages/                202 Accepted
-00:06:43.514 EDT GET  /sse                      200 OK
-00:06:43.682 EDT POST /messages/                202 Accepted
-00:06:43.342 EDT POST /sse                      405 Method Not Allowed
-```
-
-In my case, I used `https://37f9-2607-f470-6-1001-243b-bc5c-df2e-762.ngrok-free.app`, but since we are using the "SSE" transport method, the endpoint will have `/sse` appended at the end, so the final URL will be `https://37f9-2607-f470-6-1001-243b-bc5c-df2e-762.ngrok-free.app/sse`.
-
-Once this endpoint exists, you can add the MCP server as an integration to LLMs, such as Claude, following these instructions:
+For production deployment with Docker and Cloudflare Tunnel, see the [Cloudflare Tunnel setup guide](docs/setup-cloudflare.md).
 
 ![Setting up the passage-of-time MCP server in Claude's interface - each tool comes with clear descriptions and permissions](docs/screenshot-5b.png)
-
-Once you've connected the MCP server to Claude.ai, you should start receiving queries locally:
-
-```bash
-$ pipenv run server 
-/Users/jlumbroso/.asdf/installs/python/3.12.4/lib/python3.12/asyncio/events.py:88: DeprecationWarning: The run_sse_async method is deprecated (as of 2.3.2). Use run_http_async for a modern (non-SSE) alternative, or create an SSE app with `fastmcp.server.http.create_sse_app` and run it directly.
-  self._context.run(self._callback, *self._args)
-[06/16/25 19:18:04] INFO     Starting MCP server 'Passage of Time' with transport 'sse' on http://0.0.0.0:8000/sse            server.py:1219
-INFO:     Started server process [11373]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     34.162.142.92:0 - "POST /sse HTTP/1.1" 405 Method Not Allowed
-INFO:     34.162.142.92:0 - "GET /sse HTTP/1.1" 200 OK
-INFO:     34.162.142.92:0 - "POST /messages/?session_id=e21108cecbf646ffb7effe14dd856b3d HTTP/1.1" 202 Accepted
-INFO:     34.162.142.92:0 - "POST /messages/?session_id=e21108cecbf646ffb7effe14dd856b3d HTTP/1.1" 202 Accepted
-INFO:     34.162.142.92:0 - "POST /messages/?session_id=e21108cecbf646ffb7effe14dd856b3d HTTP/1.1" 202 Accepted
-INFO:     34.162.142.92:0 - "POST /messages/?session_id=e21108cecbf646ffb7effe14dd856b3d HTTP/1.1" 202 Accepted
-INFO:     34.162.142.92:0 - "POST /messages/?session_id=e21108cecbf646ffb7effe14dd856b3d HTTP/1.1" 202 Accepted
-INFO:     34.162.142.92:0 - "POST /messages/?session_id=e21108cecbf646ffb7effe14dd856b3d HTTP/1.1" 202 Accepted
-```
-
-Eventually, you will want to deploy this MCP server to a cloud provider such as Render.com, so your LLM doesn't have to contend with the unreliable nature of your local machine.
 
 ## 📝 License
 

@@ -345,6 +345,18 @@ wheels = [
 ]
 
 [[package]]
+name = "holidays"
+version = "0.92"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a4/9a/e397b5c64a17f198b7b9b719244b1ffb823ac685656e608b70de7a5b59da/holidays-0.92.tar.gz", hash = "sha256:5d716ececf94e0d354ccee255541f6ba702078d7ed17b693262f6446214904a5", size = 844925, upload-time = "2026-03-02T19:33:17.152Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/85/00/8ee09c2c671cc7e95c6212d1c15b2b67c2011468f352c21200e18c08e6c0/holidays-0.92-py3-none-any.whl", hash = "sha256:92c192a20d80cd2ddbdf3166d73a9692c59701ded34f6754115b3c849ac60857", size = 1385981, upload-time = "2026-03-02T19:33:15.627Z" },
+]
+
+[[package]]
 name = "httpcore"
 version = "1.0.9"
 source = { registry = "https://pypi.org/simple" }
@@ -615,6 +627,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastmcp" },
+    { name = "holidays" },
     { name = "python-dateutil" },
     { name = "pytz" },
 ]
@@ -627,6 +640,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastmcp" },
+    { name = "holidays", specifier = ">=0.92" },
     { name = "python-dateutil" },
     { name = "pytz" },
 ]

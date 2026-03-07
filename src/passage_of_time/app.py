@@ -2,6 +2,7 @@ from fastmcp import FastMCP
 import datetime
 import pytz
 import os
+import holidays
 from typing import Dict, Union, Optional, Literal
 from datetime import datetime, timedelta
 
@@ -473,24 +474,34 @@ def timestamp_context(
         # Day of week and weekend check
         day_of_week = dt.strftime("%A")
         is_weekend = dt.weekday() >= 5  # Saturday = 5, Sunday = 6
-        
-        # Business hours check (Mon-Fri 9-5)
+
+        # Holiday check (Korean holidays including substitute holidays)
+        kr_holidays = holidays.SouthKorea(years=dt.year)
+        holiday_name = kr_holidays.get(dt.date(), "")
+        is_holiday = bool(holiday_name)
+
+        # Business hours check (Mon-Fri 9-5, excluding holidays)
         is_business_hours = (
-            not is_weekend and 
+            not is_weekend and
+            not is_holiday and
             9 <= hour < 17
         )
-        
-        # Typical activity based on time
-        if 6 <= hour < 9:
-            typical_activity = "commute_time"
-        elif 12 <= hour < 13:
+
+        # Typical activity based on time and day type
+        is_off_day = is_weekend or is_holiday
+
+        if 12 <= hour < 13:
             typical_activity = "lunch_time"
-        elif 17 <= hour < 19:
-            typical_activity = "commute_time"
         elif 19 <= hour < 21:
             typical_activity = "dinner_time"
         elif 22 <= hour or hour < 6:
             typical_activity = "sleeping_time"
+        elif is_off_day:
+            typical_activity = "leisure_time"
+        elif 6 <= hour < 9:
+            typical_activity = "commute_time"
+        elif 17 <= hour < 19:
+            typical_activity = "commute_time"
         else:
             typical_activity = "work_time" if is_business_hours else "leisure_time"
         
@@ -509,6 +520,8 @@ def timestamp_context(
             "time_of_day": time_of_day,
             "day_of_week": day_of_week,
             "is_weekend": is_weekend,
+            "is_holiday": is_holiday,
+            "holiday_name": holiday_name,
             "is_business_hours": is_business_hours,
             "hour_24": hour,
             "typical_activity": typical_activity,
@@ -521,6 +534,8 @@ def timestamp_context(
             "time_of_day": "unknown",
             "day_of_week": "",
             "is_weekend": False,
+            "is_holiday": False,
+            "holiday_name": "",
             "is_business_hours": False,
             "hour_24": 0,
             "typical_activity": "unknown",
@@ -532,6 +547,8 @@ def timestamp_context(
             "time_of_day": "unknown",
             "day_of_week": "",
             "is_weekend": False,
+            "is_holiday": False,
+            "holiday_name": "",
             "is_business_hours": False,
             "hour_24": 0,
             "typical_activity": "unknown",

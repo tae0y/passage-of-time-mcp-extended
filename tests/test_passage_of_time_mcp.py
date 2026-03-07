@@ -280,6 +280,75 @@ class TestTimestampContext:
         assert result["time_of_day"] == "late_night"
         assert result["typical_activity"] == "sleeping_time"
 
+    def test_weekend_evening_not_commute(self):
+        """Saturday 18:00 should be leisure_time, not commute_time."""
+        result = timestamp_context("2024-01-13 18:00:00")  # Saturday
+        assert result["is_weekend"] is True
+        assert result["typical_activity"] == "leisure_time"
+
+    def test_weekend_morning_not_work(self):
+        """Sunday 10:00 should be leisure_time, not work_time."""
+        result = timestamp_context("2024-01-14 10:00:00")  # Sunday
+        assert result["is_weekend"] is True
+        assert result["typical_activity"] == "leisure_time"
+
+    def test_weekend_commute_morning_is_leisure(self):
+        """Saturday 07:00 should be leisure_time, not commute_time."""
+        result = timestamp_context("2024-01-13 07:00:00")  # Saturday
+        assert result["typical_activity"] == "leisure_time"
+
+    def test_weekend_lunch_still_lunch(self):
+        """Weekend lunch time should still be lunch_time."""
+        result = timestamp_context("2024-01-13 12:30:00")  # Saturday
+        assert result["typical_activity"] == "lunch_time"
+
+    def test_weekend_dinner_still_dinner(self):
+        """Weekend dinner time should still be dinner_time."""
+        result = timestamp_context("2024-01-13 19:30:00")  # Saturday
+        assert result["typical_activity"] == "dinner_time"
+
+    def test_weekend_sleeping_still_sleeping(self):
+        """Weekend sleeping time should still be sleeping_time."""
+        result = timestamp_context("2024-01-13 23:30:00")  # Saturday
+        assert result["typical_activity"] == "sleeping_time"
+
+    def test_holiday_work_hours_is_leisure(self):
+        """Korean holiday (Seollal) during work hours should be leisure_time."""
+        # 2025-01-29 is Seollal (Wednesday)
+        result = timestamp_context("2025-01-29 10:00:00")
+        assert result["typical_activity"] == "leisure_time"
+        assert result["is_holiday"] is True
+        assert result["holiday_name"] != ""
+
+    def test_holiday_commute_hours_is_leisure(self):
+        """Korean holiday during commute hours should be leisure_time."""
+        # 2025-01-29 is Seollal (Wednesday)
+        result = timestamp_context("2025-01-29 07:30:00")
+        assert result["typical_activity"] == "leisure_time"
+
+    def test_substitute_holiday(self):
+        """Korean substitute holiday should also be leisure_time."""
+        # 2025-01-30 is a substitute holiday for Seollal
+        result = timestamp_context("2025-01-30 09:00:00")
+        assert result["is_holiday"] is True
+        assert result["typical_activity"] == "leisure_time"
+
+    def test_holiday_lunch_still_lunch(self):
+        """Holiday lunch time should still be lunch_time."""
+        result = timestamp_context("2025-01-29 12:30:00")
+        assert result["typical_activity"] == "lunch_time"
+
+    def test_non_holiday_weekday_no_flag(self):
+        """Regular weekday should have is_holiday=False."""
+        result = timestamp_context("2025-02-03 10:00:00")  # Monday, not a holiday
+        assert result["is_holiday"] is False
+        assert result["typical_activity"] == "work_time"
+
+    def test_holiday_business_hours_false(self):
+        """Korean holiday should have is_business_hours=False."""
+        result = timestamp_context("2025-01-29 10:00:00")
+        assert result["is_business_hours"] is False
+
     def test_error_handling(self):
         result = timestamp_context("invalid date")
         assert "error" in result

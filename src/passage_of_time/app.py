@@ -449,7 +449,7 @@ def timestamp_context(
         - is_business_hours: Boolean (Mon-Fri 9-5)
         - hour_24: Hour in 24-hour format
         - typical_activity: Contextual description (e.g., "lunch_time", "commute_time")
-        - relative_day: "today", "yesterday", "tomorrow", or None
+        - relative_day: "today", "yesterday", "tomorrow", or "not_applicable"
     """
     try:
         tz = pytz.timezone(timezone)
@@ -503,8 +503,8 @@ def timestamp_context(
         elif days_diff == 1:
             relative_day = "tomorrow"
         else:
-            relative_day = None
-        
+            relative_day = "not_applicable"
+
         return {
             "time_of_day": time_of_day,
             "day_of_week": day_of_week,
@@ -514,7 +514,7 @@ def timestamp_context(
             "typical_activity": typical_activity,
             "relative_day": relative_day
         }
-        
+
     except ValueError as e:
         return {
             "error": str(e),
@@ -524,7 +524,7 @@ def timestamp_context(
             "is_business_hours": False,
             "hour_24": 0,
             "typical_activity": "unknown",
-            "relative_day": None
+            "relative_day": "not_processed"
         }
     except Exception as e:
         return {
@@ -535,7 +535,7 @@ def timestamp_context(
             "is_business_hours": False,
             "hour_24": 0,
             "typical_activity": "unknown",
-            "relative_day": None
+            "relative_day": "not_processed"
         }
 
 @mcp.tool()
@@ -613,8 +613,25 @@ def format_duration(
 
 def main():
     import uvicorn
+
+    class AcceptHeaderFixMiddleware:
+        """Rewrite wildcard Accept (*/*) to the explicit types MCP SDK expects."""
+        def __init__(self, app):
+            self.app = app
+        async def __call__(self, scope, receive, send):
+            if scope["type"] == "http":
+                headers = list(scope.get("headers", []))
+                new_headers = []
+                for key, value in headers:
+                    if key == b"accept" and value == b"*/*":
+                        value = b"application/json, text/event-stream"
+                    new_headers.append((key, value))
+                scope["headers"] = new_headers
+            return await self.app(scope, receive, send)
+
     port = int(os.environ.get("PORT", 8000))
-    app = mcp.http_app(transport="streamable-http")
+    app = mcp.http_app(transport="streamable-http", json_response=True)
+    app = AcceptHeaderFixMiddleware(app)
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 

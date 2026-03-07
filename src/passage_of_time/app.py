@@ -447,9 +447,12 @@ def timestamp_context(
         - time_of_day: "early_morning", "morning", "afternoon", "evening", "late_night"
         - day_of_week: Full day name
         - is_weekend: Boolean
-        - is_business_hours: Boolean (Mon-Fri 9-5)
+        - is_holiday: Boolean (Korean public holidays including substitute holidays)
+        - holiday_name: Holiday name string (empty if not a holiday)
+        - is_business_hours: Boolean (Mon-Fri 9-5, excluding holidays)
         - hour_24: Hour in 24-hour format
-        - typical_activity: Contextual description (e.g., "lunch_time", "commute_time")
+        - typical_activity: Contextual description (e.g., "lunch_time", "commute_time").
+            Weekends and holidays return "leisure_time" instead of "commute_time"/"work_time".
         - relative_day: "today", "yesterday", "tomorrow", or "not_applicable"
     """
     try:

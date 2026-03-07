@@ -30,7 +30,7 @@ Calculates the duration between two timestamps with human-readable output.
 
 ## `timestamp_context(timestamp)`
 
-Provides human context about a timestamp — is it weekend? Business hours? Dinner time?
+Provides human context about a timestamp — is it weekend? Business hours? Dinner time? Also detects Korean public holidays (including substitute holidays) using the `holidays` library.
 
 ```python
 # Example response:
@@ -38,11 +38,15 @@ Provides human context about a timestamp — is it weekend? Business hours? Dinn
     "time_of_day": "evening",
     "day_of_week": "Saturday",
     "is_weekend": true,
+    "is_holiday": false,
+    "holiday_name": "",
     "is_business_hours": false,
     "typical_activity": "leisure_time",
     "relative_day": "today"
 }
 ```
+
+On weekends and Korean holidays, `typical_activity` returns `leisure_time` instead of `commute_time` or `work_time`. Activities like `lunch_time`, `dinner_time`, and `sleeping_time` remain unchanged regardless of day type.
 
 ## `time_since(timestamp)`
 

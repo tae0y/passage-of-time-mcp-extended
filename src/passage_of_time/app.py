@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 mcp = FastMCP(
     name="Perception of Passage of Time",
-    instructions="""You now have access to current_datetime() and can pass along an optional timezone parameter (defaults to NYC). You should call this at the start of every response, so you can get an appreciation for the user's passage of time.
+    instructions="""You now have access to current_datetime() and can pass along an optional timezone parameter (defaults to KST, Asia/Seoul). You should call this at the start of every response, so you can get an appreciation for the user's passage of time.
 
 To help you make computations about time, you have multiple other tools:
 - time_difference(): Calculate difference between two timestamps
@@ -21,7 +21,7 @@ IMPORTANT: All timestamps must use format "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DD" 
 Examples: "2024-01-15 14:30:00" or "2024-01-15". This ensures no ambiguity in parsing."""
 )
 
-def parse_standard_timestamp(timestamp_str: str, timezone: str = "America/New_York") -> datetime:
+def parse_standard_timestamp(timestamp_str: str, timezone: str = "Asia/Seoul") -> datetime:
     """
     Parse a timestamp in our standard format.
     Accepts: "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DD"
@@ -66,14 +66,14 @@ def parse_standard_timestamp(timestamp_str: str, timezone: str = "America/New_Yo
     )
 
 @mcp.tool()
-def current_datetime(timezone: str = "America/New_York") -> str:
+def current_datetime(timezone: str = "Asia/Seoul") -> str:
     """
     Returns the current date and time as a string.
     If you are asked for the current date or time, call this function.
     
     Args:
         timezone: Timezone name (e.g., 'UTC', 'US/Pacific', 'Europe/London').
-        Defaults to 'America/New_York'.
+        Defaults to 'Asia/Seoul'.
     
     Returns:
         A formatted date and time string in format: YYYY-MM-DD HH:MM:SS TZ
@@ -90,7 +90,7 @@ def time_difference(
     timestamp1: str, 
     timestamp2: str, 
     unit: Literal["auto", "seconds", "minutes", "hours", "days"] = "auto",
-    timezone: str = "America/New_York"
+    timezone: str = "Asia/Seoul"
 ) -> Dict[str, Union[int, float, str, bool]]:
     """
     Calculate the time difference between two timestamps.
@@ -179,7 +179,7 @@ def time_difference(
 @mcp.tool()
 def time_since(
     timestamp: str,
-    timezone: str = "America/New_York"
+    timezone: str = "Asia/Seoul"
 ) -> Dict[str, Union[int, float, str]]:
     """
     Calculate time elapsed since a given timestamp until now.
@@ -267,7 +267,7 @@ def time_since(
 def parse_timestamp(
     timestamp: str,
     source_timezone: Optional[str] = None,
-    target_timezone: str = "America/New_York"
+    target_timezone: str = "Asia/Seoul"
 ) -> Dict[str, str]:
     """
     Parse and convert a timestamp to multiple formats.
@@ -337,7 +337,7 @@ def add_time(
     timestamp: str,
     duration: Union[int, float],
     unit: Literal["seconds", "minutes", "hours", "days", "weeks"],
-    timezone: str = "America/New_York"
+    timezone: str = "Asia/Seoul"
 ) -> Dict[str, str]:
     """
     Add a duration to a timestamp.
@@ -430,7 +430,7 @@ def add_time(
 @mcp.tool()
 def timestamp_context(
     timestamp: str,
-    timezone: str = "America/New_York"
+    timezone: str = "Asia/Seoul"
 ) -> Dict[str, Union[str, bool, int]]:
     """
     Provide contextual information about a timestamp.

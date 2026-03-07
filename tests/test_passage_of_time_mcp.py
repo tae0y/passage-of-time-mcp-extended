@@ -40,7 +40,7 @@ class TestCurrentDatetime:
         assert isinstance(result, str)
         parts = result.split()
         assert len(parts) >= 3
-        assert any(tz in result for tz in ["EST", "EDT", "America/New_York"])
+        assert any(tz in result for tz in ["KST", "Asia/Seoul"])
 
     def test_utc_timezone(self):
         result = current_datetime("UTC")

@@ -1,3 +1,8 @@
+# Local-only Files
+.claude/
+localdocs
+passage-of-time-mcp.code-workspace
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

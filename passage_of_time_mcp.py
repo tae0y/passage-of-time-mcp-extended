@@ -15,6 +15,7 @@ if _github_client_id and _github_client_secret and _base_url:
         client_id=_github_client_id,
         client_secret=_github_client_secret,
         base_url=_base_url,
+        require_authorization_consent=False,
     )
 else:
     _auth = None
@@ -627,10 +628,89 @@ def format_duration(
         return f"Error formatting duration: {str(e)}"
 
 if __name__ == "__main__":
+    import json
+    import logging
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse, Response
+    from starlette.routing import Route
+    from starlette.middleware.base import BaseHTTPMiddleware
+
+    logger = logging.getLogger("mcp.debug")
+
+    class LogResponseMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            # Log request body for /token
+            if request.url.path == "/token" and request.method == "POST":
+                req_body = await request.body()
+                logger.warning("REQUEST POST /token body=%s", req_body[:500].decode(errors="replace"))
+                # Rebuild request body for downstream
+                from starlette.datastructures import Headers
+                async def receive():
+                    return {"type": "http.request", "body": req_body, "more_body": False}
+                request = Request(request.scope, receive)
+
+            response = await call_next(request)
+            log_paths = ("/token", "/register", "/mcp", "/auth/callback")
+            if request.url.path in log_paths:
+                body_chunks = []
+                async for chunk in response.body_iterator:
+                    body_chunks.append(chunk)
+                body = b"".join(body_chunks)
+                location = response.headers.get("location", "")
+                logger.warning(
+                    "RESPONSE %s %s -> %d location=%s body=%s",
+                    request.method, request.url.path, response.status_code,
+                    location,
+                    body[:1000].decode(errors="replace"),
+                )
+                from starlette.responses import Response as StarletteResponse
+                return StarletteResponse(
+                    content=body,
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                    media_type=response.media_type,
+                )
+            return response
+
+    async def oauth_protected_resource(request: Request) -> JSONResponse:
+        base = _base_url or f"http://{request.url.hostname}:{request.url.port}"
+        return JSONResponse({
+            "resource": base + "/mcp",
+            "authorization_servers": [base + "/"],
+            "bearer_methods_supported": ["header"],
+            "scopes_supported": ["user"],
+        })
+
+    async def oauth_authorization_server(request: Request) -> JSONResponse:
+        base = _base_url or f"http://{request.url.hostname}:{request.url.port}"
+        base = base.rstrip("/")
+        return JSONResponse({
+            "issuer": base + "/",
+            "authorization_endpoint": base + "/authorize",
+            "token_endpoint": base + "/token",
+            "registration_endpoint": base + "/register",
+            "scopes_supported": ["user", "claudeai"],
+            "response_types_supported": ["code"],
+            "grant_types_supported": ["authorization_code", "refresh_token"],
+            "token_endpoint_auth_methods_supported": ["client_secret_post", "client_secret_basic", "none"],
+            "code_challenge_methods_supported": ["S256"],
+            "client_id_metadata_document_supported": True,
+        })
+
     port = int(os.environ.get("PORT", 8000))
-    mcp.run(
-        transport="streamable-http",
-        host="0.0.0.0",
-        port=port,
-        log_level="debug"
-    )
+    app = mcp.http_app(transport="streamable-http")
+    app.add_middleware(LogResponseMiddleware)
+
+    app.router.routes.insert(0, Route(
+        "/.well-known/oauth-protected-resource",
+        endpoint=oauth_protected_resource,
+        methods=["GET"],
+    ))
+    app.router.routes.insert(0, Route(
+        "/.well-known/oauth-authorization-server",
+        endpoint=oauth_authorization_server,
+        methods=["GET"],
+    ))
+
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="debug")

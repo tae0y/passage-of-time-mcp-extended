@@ -630,7 +630,7 @@ def main():
             return await self.app(scope, receive, send)
 
     port = int(os.environ.get("PORT", 8000))
-    app = mcp.http_app(transport="streamable-http", json_response=True)
+    app = mcp.http_app(transport="streamable-http", json_response=True, stateless_http=True)
     app = AcceptHeaderFixMiddleware(app)
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
